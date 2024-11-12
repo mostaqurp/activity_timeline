@@ -4,10 +4,15 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import timedelta
 
-# Load the data
-@st.cache_data
-def load_data():
-    data = pd.read_csv("activity_subset_data_v2.csv")
+# Load data from file upload or default CSV
+def load_data(file=None):
+    if file is not None:
+        # Load the user-uploaded file
+        data = pd.read_csv(file)
+    else:
+        # Load the default CSV file
+        data = pd.read_csv("activity_subset_data_v2.csv")
+
     data['startTime'] = pd.to_datetime(data['startTime'])
     data['endTime'] = pd.to_datetime(data['endTime'])
     
@@ -17,7 +22,15 @@ def load_data():
     
     return data
 
-data = load_data()
+# Streamlit UI for file upload
+st.title("Activity Timeline Viewer")
+st.write("Upload a CSV file with `id`, `member`, `startTime`, `endTime`, and `activityName` columns, or use the default data.")
+
+# File uploader widget
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+# Load data based on the uploaded file or default file
+data = load_data(uploaded_file)
 
 # Helper function to plot timeline for a selected person_id
 def plot_timeline(person_data):
@@ -54,15 +67,14 @@ def plot_timeline(person_data):
     
     st.pyplot(fig)
 
-# Streamlit Interface
-st.title("Activity Timeline Viewer")
-st.write("Select a `person_id` to view their activity timeline for a 24-hour period.")
-
 # Dropdown to select person_id
-unique_person_ids = data['person_id'].unique()
-selected_person_id = st.selectbox("Choose person_id:", unique_person_ids)
+if 'person_id' in data.columns:
+    unique_person_ids = data['person_id'].unique()
+    selected_person_id = st.selectbox("Choose person_id:", unique_person_ids)
 
-# Filter data for the selected person_id and plot timeline
-if selected_person_id:
-    person_data = data[data['person_id'] == selected_person_id]
-    plot_timeline(person_data)
+    # Filter data for the selected person_id and plot timeline
+    if selected_person_id:
+        person_data = data[data['person_id'] == selected_person_id]
+        plot_timeline(person_data)
+else:
+    st.error("Uploaded file must contain `id`, `member`, `startTime`, `endTime`, and `activityName` columns.")
